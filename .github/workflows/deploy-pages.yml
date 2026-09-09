@@ -32,6 +32,14 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
+      - name: Create complete source ZIP
+        run: zip -r credlock-siwes-portal-source.zip . -x 'node_modules/*' 'dist/*' '.git/*'
+      - name: Upload complete source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: credlock-siwes-portal-source
+          path: credlock-siwes-portal-source.zip
+          retention-days: 30
 
   deploy:
     environment:
