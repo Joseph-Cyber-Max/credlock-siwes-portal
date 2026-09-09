@@ -28,7 +28,7 @@ jobs:
       - name: Link Apps Script project
         working-directory: apps-script
         run: |
-          printf '{"scriptId":"1yVvg8uVePVjXCUB4q9YWBGuG1-c6ZGaxh_RTPYABs9j2pqgAY4stujoT","rootDir":"apps-script"}\n' > ../.clasp.json
+          printf '{"scriptId":"11dg34n-gM_uhow87okjURvKmtapYZrTejeg6xnSSPf8kRHnWtIPLmC0S","rootDir":"apps-script"}\n' > ../.clasp.json
       - name: Push source
         run: clasp push --force
       - name: Deploy web app
