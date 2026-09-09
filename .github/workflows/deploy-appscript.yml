@@ -1,0 +1,35 @@
+name: Deploy Apps Script Backend
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'apps-script/**'
+      - '.github/workflows/deploy-appscript.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install clasp
+        run: npm install --global @google/clasp
+      - name: Configure clasp credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          test -n "$CLASPRC_JSON"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+      - name: Link Apps Script project
+        working-directory: apps-script
+        run: |
+          printf '{"scriptId":"1yVvg8uVePVjXCUB4q9YWBGuG1-c6ZGaxh_RTPYABs9j2pqgAY4stujoT","rootDir":"apps-script"}\n' > ../.clasp.json
+      - name: Push source
+        run: clasp push --force
+      - name: Deploy web app
+        run: clasp deploy --description "Credlock SIWES Portal production backend"
