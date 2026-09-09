@@ -1,0 +1,86 @@
+// Automatic Google Sheet schema migration for the Credlock SIWES Portal.
+// Safe to run repeatedly: existing sheets and populated headers are preserved.
+
+const PORTAL_SCHEMA_ = {
+  CONFIG: ['Setting','Value','Description','UpdatedAt'],
+  USERS: ['UserID','SIWESID','FullName','Email','Phone','Password','Role','Status','LastLogin','CreatedAt','UpdatedAt'],
+  STUDENTS: ['StudentID','SIWESID','UserID','FullName','FirstName','MiddleName','LastName','Gender','DateOfBirth','Phone','Email','Address','Institution','MatricNumber','Programme','Department','Level','AcademicSession','Organization','Supervisor','StartDate','EndDate','Status','CreatedAt','UpdatedAt'],
+  INSTITUTIONS: ['InstitutionID','Name','Status','CreatedAt','UpdatedAt'],
+  DEPARTMENTS: ['DepartmentID','Institution','Name','Status','CreatedAt','UpdatedAt'],
+  PROGRAMMES: ['ProgrammeID','Institution','Department','Name','Status','CreatedAt','UpdatedAt'],
+  ORGANIZATIONS: ['OrganizationID','Name','Address','Supervisor','Phone','Email','Status','CreatedAt','UpdatedAt'],
+  SUPERVISORS: ['SupervisorID','FullName','Email','Phone','Organization','Department','Status','CreatedAt','UpdatedAt'],
+  SIWES_SESSIONS: ['SessionID','Name','StartDate','EndDate','Status','CreatedAt','UpdatedAt'],
+  ATTENDANCE: ['AttendanceID','StudentID','SIWESID','Date','Day','ClockIn','ClockOut','HoursWorked','Status','Late','Location','SupervisorVerified','SupervisorRemarks','CreatedAt','UpdatedAt'],
+  DAILY_ACTIVITY_LOG: ['ActivityID','StudentID','SIWESID','Date','Day','Week','Month','Activity','IssueRequest','ActionTaken','Outcome','Status','Escalated','EscalatedTo','WhatILearned','TestingActivity','LearningEntry','ActivityCount','ResolvedCount','EscalatedCount','TestingCount','VerificationStatus','SupervisorRemarks','CreatedAt','UpdatedAt'],
+  ISSUE_LOG: ['IssueID','StudentID','SIWESID','Date','Category','Description','Priority','ActionTaken','Outcome','Status','Escalated','EscalatedTo','Resolution','LearningOutcome','SupervisorRemarks','CreatedAt','UpdatedAt'],
+  WEEKLY_SUMMARY: ['SummaryID','StudentID','SIWESID','Week','StartDate','EndDate','Activities','Issues','ResolvedIssues','TestingActivities','LearningEntries','AttendanceDays','HoursWorked','SupervisorRemarks','Status','CreatedAt','UpdatedAt'],
+  WEEKLY_ASSESSMENT: ['AssessmentID','StudentID','SIWESID','Week','TechnicalKnowledge','ProblemSolving','Documentation','Communication','Teamwork','LearningInitiative','Reliability','TotalScore','AverageScore','Comments','Status','SubmittedAt'],
+  MONTHLY_REVIEW: ['ReviewID','StudentID','SIWESID','Month','SupervisorID','Activities','IssuesResolved','TestingActivities','LearningEntries','AttendanceDays','Strengths','Challenges','Recommendations','Status','CreatedAt','UpdatedAt'],
+  MONTHLY_EVALUATION: ['EvaluationID','StudentID','SIWESID','Month','ActivityTarget','ActivitiesActual','ActivityAchievement','IssueCompletion','TestingTarget','TestingActual','TestingAchievement','LearningTarget','LearningActual','LearningAchievement','AttendanceParticipation','OverallKPI','PerformanceGrade','FinalAssessment','CreatedAt'],
+  KPI_REFERENCE: ['KPIID','Metric','Target','Weight','Description','Status','UpdatedAt'],
+  LEARNING_PLAN: ['LearningPlanID','Programme','Session','Week','Topic','LearningObjective','ExpectedSkill','Activity','AssessmentCriteria','Status'],
+  SKILLS: ['SkillID','Name','Category','Description','Status','CreatedAt','UpdatedAt'],
+  STUDENT_SKILLS: ['StudentSkillID','StudentID','SIWESID','SkillID','SkillName','Level','Evidence','Verified','SupervisorRemarks','CreatedAt','UpdatedAt'],
+  SUPERVISOR_ASSESSMENT: ['AssessmentID','StudentID','SIWESID','SupervisorID','Month','TechnicalKnowledge','ProblemSolving','Documentation','Responsiveness','Escalation','Communication','Teamwork','LearningInitiative','Reliability','TotalScore','AverageScore','Comments','SubmittedAt'],
+  EVIDENCE: ['EvidenceID','StudentID','SIWESID','Date','Type','Title','Description','FileURL','Status','VerifiedBy','CreatedAt','UpdatedAt'],
+  NOTIFICATIONS: ['NotificationID','UserID','Title','Message','Type','Read','CreatedAt'],
+  AUDIT_LOG: ['AuditID','UserID','Role','Action','Module','RecordID','Description','Timestamp'],
+  REPORTS: ['ReportID','StudentID','SIWESID','Type','Period','Title','FileURL','Status','CreatedAt','UpdatedAt']
+};
+
+function initializePortalSchema_() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const now = new Date();
+  Object.keys(PORTAL_SCHEMA_).forEach(function(name) {
+    let sh = ss.getSheetByName(name);
+    if (!sh) sh = ss.insertSheet(name);
+    const headers = PORTAL_SCHEMA_[name];
+    if (sh.getLastColumn() === 0 || sh.getLastRow() === 0) {
+      sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    } else {
+      const existing = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), headers.length)).getValues()[0].map(String);
+      const missing = headers.filter(function(h) { return existing.indexOf(h) < 0; });
+      if (missing.length) sh.getRange(1, sh.getLastColumn() + 1, 1, missing.length).setValues([missing]);
+    }
+    sh.setFrozenRows(1);
+  });
+  seedPortalConfig_(ss, now);
+  seedKpiReference_(ss, now);
+  return {success:true, sheets:Object.keys(PORTAL_SCHEMA_).length};
+}
+
+function seedPortalConfig_(ss, now) {
+  const sh = ss.getSheetByName('CONFIG');
+  const values = sh.getDataRange().getValues();
+  const existing = {};
+  values.slice(1).forEach(function(r) { if (r[0]) existing[String(r[0])] = true; });
+  const defaults = [
+    ['PORTAL_NAME','Credlock SIWES Portal','Official portal name'],
+    ['SPREADSHEET_ID',SHEET_ID,'Connected Google Spreadsheet ID'],
+    ['SUPER_ADMIN_EMAIL',SUPER_ADMIN_EMAIL,'Primary portal administrator'],
+    ['TIMEZONE','Africa/Lagos','Portal timezone'],
+    ['ACADEMIC_YEAR',String(new Date().getFullYear()),'Default academic year'],
+    ['SESSION_DURATION_SECONDS',String(SESSION_SECONDS),'Session lifetime'],
+    ['PASSWORD_RESET_SECONDS',String(RESET_SECONDS),'Password reset token lifetime']
+  ];
+  defaults.forEach(function(r) {
+    if (!existing[r[0]]) sh.appendRow([r[0],r[1],r[2],now]);
+  });
+}
+
+function seedKpiReference_(ss, now) {
+  const sh = ss.getSheetByName('KPI_REFERENCE');
+  if (sh.getLastRow() > 1) return;
+  const rows = [
+    ['KPI-01','Attendance Participation',100,0.20,'Participation in assigned SIWES attendance','ACTIVE',now],
+    ['KPI-02','Activity Completion',100,0.20,'Completion of daily technical activities','ACTIVE',now],
+    ['KPI-03','Issue Resolution',100,0.20,'Technical issues resolved or properly escalated','ACTIVE',now],
+    ['KPI-04','Testing Activity',100,0.15,'Testing and verification activities completed','ACTIVE',now],
+    ['KPI-05','Learning Progress',100,0.15,'Learning entries and demonstrated skills','ACTIVE',now],
+    ['KPI-06','Documentation Quality',100,0.10,'Accuracy and completeness of records','ACTIVE',now]
+  ];
+  sh.getRange(2,1,rows.length,rows[0].length).setValues(rows);
+}
+
+function initializePortalNow() { return initializePortalSchema_(); }
