@@ -1,0 +1,23 @@
+name: Package Source ZIP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Remove repository metadata
+        run: rm -rf .git
+      - name: Create ZIP
+        run: zip -r credlock-siwes-portal-source.zip . -x 'node_modules/*' 'dist/*' '.git/*'
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: credlock-siwes-portal-source
+          path: credlock-siwes-portal-source.zip
+          retention-days: 30
