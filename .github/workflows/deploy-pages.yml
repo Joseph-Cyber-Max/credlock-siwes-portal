@@ -24,10 +24,47 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: Build
         run: npm run build
+      - name: Replace generated entrypoint with lightweight portal shell
+        run: |
+          mkdir -p dist/css dist/js
+          cp css/style.css dist/css/style.css
+          cp js/api.js dist/js/api.js
+          cp js/app.js dist/js/app.js
+          cp public/favicon.svg dist/favicon.svg
+          cp sw.js dist/sw.js
+          cat > dist/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1.0">
+          <meta name="theme-color" content="#071a33">
+          <meta name="description" content="Credlock SIWES Portal">
+          <link rel="preconnect" href="https://script.google.com" crossorigin>
+          <link rel="dns-prefetch" href="//script.google.com">
+          <link rel="icon" href="./favicon.svg">
+          <link rel="stylesheet" href="./css/style.css">
+          <title>Credlock SIWES Portal</title>
+          </head>
+          <body>
+          <div id="app"><div style="min-height:100vh;display:grid;place-items:center;font:600 14px system-ui;color:#526174">Loading Credlock SIWES Portal…</div></div>
+          <script type="module" src="./js/app.js"></script>
+          <script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));</script>
+          </body>
+          </html>
+          EOF
+      - name: Verify production files
+        run: |
+          test -f dist/index.html
+          test -f dist/css/style.css
+          test -f dist/js/app.js
+          test -f dist/js/api.js
+          echo "Portal artifact ready"
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
