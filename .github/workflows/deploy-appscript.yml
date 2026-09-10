@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - name: Install clasp
         run: npm install --global @google/clasp
       - name: Configure clasp credentials
@@ -44,7 +44,7 @@ jobs:
           marker = "function ensureSchema_(){"
           if marker not in s:
               raise SystemExit('Expected ensureSchema definition was not found.')
-          s = s.replace(marker, marker + "initializePortalSchema_();", 1)
+          s = s.replace(marker, marker + "initializePortalSchema_();initializeCyberSecurityTrack_();", 1)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Push source
