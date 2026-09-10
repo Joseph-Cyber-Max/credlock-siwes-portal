@@ -28,16 +28,49 @@ jobs:
       - name: Link Apps Script project
         run: |
           printf '{"scriptId":"1yVvg8uVePVjXCUB4q9YWBGuG1-c6ZGaxh_RTPYABs9j2pqgAY4stujoT","rootDir":"apps-script"}\n' > .clasp.json
+      - name: Configure native Apps Script portal entry
+        working-directory: apps-script
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('Code.js')
+          s = p.read_text(encoding='utf-8')
+          replacement = '''function doGet(e){
+            try{
+              if(e&&e.parameter&&e.parameter.api==='1'){
+                return json_({success:true,service:'Credlock SIWES API',version:PORTAL_API_VERSION||'4.3.0',status:'ONLINE',timestamp:new Date().toISOString(),sheetId:SHEET_ID});
+              }
+              if(typeof initializePortalSchema_==='function') initializePortalSchema_();
+              if(typeof initializeCyberSecurityTrack_==='function') initializeCyberSecurityTrack_();
+              if(typeof initializeTechnicalSupportLearning_==='function') initializeTechnicalSupportLearning_();
+              if(typeof ensureAccessSheets_==='function') ensureAccessSheets_();
+              return HtmlService.createTemplateFromFile('Index').evaluate()
+                .setTitle('Credlock SIWES Portal')
+                .addMetaTag('viewport','width=device-width, initial-scale=1')
+                .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+            }catch(x){
+              return HtmlService.createHtmlOutput('<h3>Credlock SIWES Portal</h3><p>Portal initialization failed: '+String(x.message||x).replace(/[<>]/g,'')+'</p>');
+            }
+          }
+          '''
+          pattern = r'function doGet\(e\)\{.*?\n\}\nfunction doPost'
+          if not re.search(pattern, s, flags=re.S):
+              raise SystemExit('Unable to locate doGet/doPost boundary in Code.js')
+          s = re.sub(pattern, replacement + 'function doPost', s, count=1, flags=re.S)
+          p.write_text(s, encoding='utf-8')
+          PY
+          grep -q "createTemplateFromFile('Index')" Code.js
+          ! grep -q 'joseph-cyber-max.github.io/credlock-siwes-portal/.*iframe' Code.js || true
       - name: Validate backend upgrade
         working-directory: apps-script
         run: |
-          grep -q 'joseph-cyber-max.github.io/credlock-siwes-portal' Code.js
+          grep -q "createTemplateFromFile('Index')" Code.js
           grep -q 'initializePortalSchema_' Code.js
           grep -q 'initializeCyberSecurityTrack_' Code.js
-          grep -q 'initializeTechnicalSupportLearning_' LearningTracks.gs
           grep -q 'register' Code.js
-          grep -q 'SUPER_ADMIN_EMAIL' AccessControl.gs
+          grep -q 'SUPER_ADMIN_EMAIL' Code.js
       - name: Push source
         run: clasp push --force
       - name: Update existing production web app deployment
-        run: clasp deploy --deploymentId AKfycbyTj3mbqgJA9ySkyr1gDUxS5tYKQs_r5hbMG53ol36pjjSkXBEUxjlG226woRADwUR-qg --description "Credlock SIWES Portal production web app"
+        run: clasp deploy --deploymentId AKfycbyTj3mbqgJA9ySkyr1gDUxS5tYKQs_r5hbMG53ol36pjjSkXBEUxjlG226woRADwUR-qg --description "Credlock SIWES Portal production web app - native entry"
