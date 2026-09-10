@@ -4,5 +4,32 @@ export function saveSession(value){sessionStorage.setItem('credlock_user',JSON.s
 export function clearSession(){sessionStorage.removeItem('credlock_user')}
 async function call(action,payload={},publicCall=false){const s=getSession()||{};const token=s.token||s.Token||'';const body={action,payload:{...payload,...(publicCall?{}:{token})}};const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});const j=await r.json();if(!j.success)throw new Error(j.message||'Request failed');return j.data??j}
 export const adminCall=(action,payload={})=>call(action,payload,false);
-export const api={login:(email,pin)=>call('login',{email,password:pin,pin,key:email,siwesId:email},true),register:p=>call('register',p,true),resetRequest:email=>call('requestPasswordReset',{email},true),reset:(token,newPassword)=>call('resetPassword',{token,newPassword},true),changePassword:(oldPassword,newPassword)=>call('changePassword',{oldPassword,newPassword}),dashboard:()=>call('dashboard'),students:()=>call('students'),attendance:()=>call('attendance'),logs:()=>call('dailyLogs'),tickets:()=>call('tickets'),learning:()=>call('learningPlan'),assessments:()=>call('assessments'),config:()=>call('config'),saveStudent:p=>call('saveStudent',p),saveLog:p=>call('saveDailyLog',p),saveTicket:p=>call('saveTicket',p),saveAttendance:p=>call('saveAttendance',p),lookups:()=>call('lookups'),logout:()=>call('logout')};
+export const api={
+ login:(email,pin)=>call('login',{email,password:pin,pin,key:email,siwesId:email},true),
+ register:p=>call('register',p,true),
+ resetRequest:email=>call('requestPasswordReset',{email},true),
+ reset:(token,newPassword)=>call('resetPassword',{token,newPassword},true),
+ changePassword:(oldPassword,newPassword)=>call('changePassword',{oldPassword,newPassword}),
+ dashboard:()=>call('dashboard'),
+ students:()=>call('students'),
+ attendance:()=>call('attendance'),
+ logs:()=>call('dailyLogs'),
+ tickets:()=>call('tickets'),
+ learning:()=>call('learningPlan'),
+ assessments:()=>call('assessments'),
+ config:()=>call('config'),
+ notifications:()=>call('notifications'),
+ unreadCount:()=>call('unreadCount'),
+ markNotificationRead:id=>call('markNotificationRead',{NotificationID:id}),
+ markAllNotificationsRead:()=>call('markAllNotificationsRead'),
+ profile:()=>call('profile'),
+ saveStudent:p=>call('saveStudent',p),
+ updateStudent:p=>call('updateStudent',p),
+ deleteStudent:id=>call('deleteStudent',{StudentID:id}),
+ saveLog:p=>call('saveDailyLog',p),
+ saveTicket:p=>call('saveTicket',p),
+ saveAttendance:p=>call('saveAttendance',p),
+ lookups:()=>call('lookups'),
+ logout:()=>call('logout')
+};
 export {API};
