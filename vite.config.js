@@ -1,8 +1,6 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
-  base: "/credlock-siwes-portal/",
-  build: { outDir: "dist", sourcemap: false }
+  base: '/credlock-siwes-portal/',
+  build: { outDir: 'dist', sourcemap: false }
 });
