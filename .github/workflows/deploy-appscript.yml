@@ -26,27 +26,14 @@ jobs:
           test -n "$CLASPRC_JSON"
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
       - name: Link Apps Script project
+        run: |
+          printf '{"scriptId":"1yVvg8uVePVjXCUB4q9YWBGuG1-c6ZGaxh_RTPYABs9j2pqgAY4stujoT","rootDir":"apps-script"}\n' > .clasp.json
+      - name: Validate web entry and Sheet initialization
         working-directory: apps-script
         run: |
-          printf '{"scriptId":"1yVvg8uVePVjXCUB4q9YWBGuG1-c6ZGaxh_RTPYABs9j2pqgAY4stujoT","rootDir":"apps-script"}\n' > ../.clasp.json
-      - name: Configure Apps Script web entry and schema hook
-        working-directory: apps-script
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('Code.js')
-          s = p.read_text(encoding='utf-8')
-          old = "function doGet(){return json_({success:true,service:'Credlock SIWES API',version:'3.0.0',status:'ONLINE',timestamp:new Date().toISOString()});}"
-          new = '''function doGet(e){if(e&&e.parameter&&e.parameter.api==='1')return json_({success:true,service:'Credlock SIWES API',version:'3.0.0',status:'ONLINE',timestamp:new Date().toISOString()});return HtmlService.createHtmlOutput('<!doctype html><html><head><base target="_top"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden}body{background:#f5f7fb}</style></head><body><iframe src="https://joseph-cyber-max.github.io/credlock-siwes-portal/" allow="camera;geolocation"></iframe></body></html>').setTitle('Credlock SIWES Portal');}'''
-          if old not in s:
-              raise SystemExit('Expected doGet definition was not found.')
-          s = s.replace(old, new, 1)
-          marker = "function ensureSchema_(){"
-          if marker not in s:
-              raise SystemExit('Expected ensureSchema definition was not found.')
-          s = s.replace(marker, marker + "initializePortalSchema_();initializeCyberSecurityTrack_();", 1)
-          p.write_text(s, encoding='utf-8')
-          PY
+          grep -q 'joseph-cyber-max.github.io/credlock-siwes-portal' Code.js
+          grep -q 'initializePortalSchema_' Code.js
+          grep -q 'initializeCyberSecurityTrack_' Code.js
       - name: Push source
         run: clasp push --force
       - name: Update existing production web app deployment
