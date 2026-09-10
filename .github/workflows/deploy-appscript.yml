@@ -28,12 +28,15 @@ jobs:
       - name: Link Apps Script project
         run: |
           printf '{"scriptId":"1yVvg8uVePVjXCUB4q9YWBGuG1-c6ZGaxh_RTPYABs9j2pqgAY4stujoT","rootDir":"apps-script"}\n' > .clasp.json
-      - name: Validate web entry and Sheet initialization
+      - name: Validate backend upgrade
         working-directory: apps-script
         run: |
           grep -q 'joseph-cyber-max.github.io/credlock-siwes-portal' Code.js
           grep -q 'initializePortalSchema_' Code.js
           grep -q 'initializeCyberSecurityTrack_' Code.js
+          grep -q 'initializeTechnicalSupportLearning_' LearningTracks.gs
+          grep -q 'register' Code.js
+          grep -q 'SUPER_ADMIN_EMAIL' AccessControl.gs
       - name: Push source
         run: clasp push --force
       - name: Update existing production web app deployment
